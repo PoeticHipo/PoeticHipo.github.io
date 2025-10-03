@@ -1,4 +1,3 @@
-# PoeticHipo.github.io
 Div 1 Timer
 Hello,
 This is a Division 1 Speed Run timer.
