@@ -1,7 +1,8 @@
 # PoeticHipo.github.io
 Div 1 Timer
 Hello,
-This is a Division 1 Speed Run timer I had Google Gemini help me build.
+This is a Division 1 Speed Run timer. 
+I had Google Gemini help me build.
 
 Everything is local on your computer.
 
