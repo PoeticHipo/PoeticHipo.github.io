@@ -1,1 +1,986 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Div1 Speed Run Timer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import for a modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Mono:wght[400;700]&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background */
+            color: #c9d1d9; /* Light text */
+        }
+        #timerDisplay {
+            font-family: 'Roboto Mono', monospace; /* Monospaced font for timing */
+            font-size: 4rem;
+            letter-spacing: -2px;
+            color: #58a6ff; /* Blue for the timer */
+        }
+        .split-time {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.25rem;
+        }
+        /* Base button styles applied using @apply */
+        .btn {
+            @apply px-4 py-2 text-sm font-bold rounded-xl shadow-lg transition duration-200 ease-in-out transform hover:scale-[1.03] hover:shadow-xl;
+        }
+        .credit-display {
+            font-family: 'Roboto Mono', monospace;
+        }
+        /* Style for the input fields (to hide number arrows) */
+        input[type="number"] {
+            -moz-appearance: textfield; 
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        select {
+             /* Custom styling for the select box to match input fields */
+            background-image: none;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex flex-col items-center">
+    
+    <div class="w-full max-w-4xl bg-[#161b22] p-6 sm:p-8 rounded-2xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-white">Div1 Speed Run Timer</h1>
+
+        <!-- Main Timer Display (now includes milliseconds) -->
+        <div class="text-center mb-2">
+            <span id="timerDisplay" class="block">00:00:00.000</span>
+        </div>
+        <!-- Sub-text to indicate timer mode -->
+        <p id="timerStatus" class="text-center text-sm mb-8 text-gray-500">
+            Ready: Pre-Run Timer Mode Active
+        </p>
+
+
+        <!-- Credit and Stats -->
+        <div class="flex flex-col md:flex-row justify-around items-center text-center p-4 mb-8 bg-[#21262d] rounded-xl border border-gray-700 space-y-4 md:space-y-0">
+            
+            <!-- Total Segments/Splits -->
+            <div class="p-2 w-full md:w-1/3">
+                <p class="text-sm uppercase tracking-wider text-gray-400">Total Splits Recorded</p>
+                <p id="runCount" class="text-3xl font-extrabold text-white mt-1">0</p>
+            </div>
+            
+            <!-- Inventory Credits -->
+            <div class="p-2 w-full md:w-1/3 border-t md:border-t-0 md:border-x border-gray-600">
+                <p class="text-sm uppercase tracking-wider text-gray-400">Inventory Credits</p>
+                <p id="inventoryCreditsDisplay" class="text-3xl font-extrabold text-yellow-400 mt-1 credit-display">0</p>
+            </div>
+
+            <!-- Total Credits Earned -->
+            <div class="p-2 w-full md:w-1/3 border-t md:border-t-0 border-gray-600">
+                <p class="text-sm uppercase tracking-wider text-gray-400">Total Credits Earned</p>
+                <p id="creditsTotal" class="text-3xl font-extrabold text-green-400 mt-1 credit-display">0</p>
+            </div>
+        </div>
+        
+        <!-- Editor Section (Now 4 editable fields) -->
+        <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-white">Credit Event Editor</h2>
+        <!-- Adjusted grid to 4 columns on medium screens to fit the new Survival Cache input -->
+        <div class="mb-8 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 bg-[#21262d] rounded-xl border border-gray-700">
+            
+            <!-- Inventory Manual Adjust -->
+            <div class="col-span-2 md:col-span-1">
+                <label for="startingCreditsInput" class="text-xs uppercase tracking-wider text-gray-400 block mb-1 min-h-10 flex items-center">Inventory Credits (Manual)</label>
+                <input type="number" id="startingCreditsInput" value="0" min="0" max="10000" class="w-full text-center bg-[#0d1117] text-white p-2 rounded-lg font-bold credit-display border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            </div>
+
+            <!-- Credits per Run -->
+            <div class="col-span-1">
+                <label for="runCreditsInput" class="text-xs uppercase tracking-wider text-gray-400 block mb-1 min-h-10 flex items-center">Credits per Run</label>
+                <input type="number" id="runCreditsInput" value="1691" min="1" class="w-full text-center bg-[#0d1117] text-white p-2 rounded-lg font-bold credit-display border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            </div>
+            
+            <!-- Cache Purchase Cost (Base Price) -->
+            <div class="col-span-1">
+                <label for="cachePurchaseCostInput" class="text-xs uppercase tracking-wider text-gray-400 block mb-1 min-h-10 flex items-center">Cache BASE Purchase Cost</label>
+                <input type="number" id="cachePurchaseCostInput" value="1500" min="1" class="w-full text-center bg-[#0d1117] text-white p-2 rounded-lg font-bold credit-display border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+            
+            <!-- NEW: Survival Cache Count Input -->
+            <div class="col-span-2 md:col-span-1">
+                <label for="survivalCacheCountInput" class="text-xs uppercase tracking-wider text-gray-400 block mb-1 min-h-10 flex items-center">Number of Survival Caches</label>
+                <input type="number" id="survivalCacheCountInput" value="0" min="0" class="w-full text-center bg-[#0d1117] text-white p-2 rounded-lg font-bold credit-display border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+        </div>
+
+        <!-- Controls Row 1 (Core Timer) -->
+        <div class="flex justify-center space-x-2 sm:space-x-4 mb-4">
+            <!-- Export Button (Yellow) -->
+            <button id="exportBtn" class="btn bg-yellow-500 text-gray-900 hover:bg-yellow-600 shadow-yellow-800/50 w-1/3 sm:w-1/4">
+                Export
+            </button>
+            <!-- Reset Button (Orange) -->
+            <button id="resetBtn" class="btn bg-orange-600 text-white hover:bg-orange-700 shadow-orange-900/50 w-1/3 sm:w-1/4">
+                Reset All
+            </button>
+            <!-- Start/Stop Button (Green/Red) -->
+            <button id="startStopBtn" class="btn bg-green-600 text-white hover:bg-green-700 shadow-green-900/50 w-1/3 sm:w-1/4">
+                Start
+            </button>
+        </div>
+
+        <!-- Controls Row 2 (Game Events/Credits) -->
+        <div class="flex justify-center space-x-2 sm:space-x-4 mb-8">
+            <!-- Run Button (New Lap) -->
+            <button id="runBtn" class="btn bg-cyan-500 text-gray-900 hover:bg-cyan-600 shadow-cyan-800/50 w-1/4" disabled>
+                Run (+$)
+            </button>
+            <!-- Boss Kill Button (New Lap) -->
+            <button id="bossKillBtn" class="btn bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-800/50 w-1/4" disabled>
+                Boss Kill (+$)
+            </button>
+            
+            <!-- Survival Cache Button (Inventory Add - DARK PURPLE) -->
+            <!-- Now uses the quantity input from the editor panel -->
+            <button id="executeSurvivalGainBtn" class="btn bg-purple-800 text-white hover:bg-purple-900 shadow-purple-900/50 w-1/4">
+                Survival Caches (+$)
+            </button>
+            
+            <!-- Cache Purchase Dropdown/Button Group (Inventory Subtract) - Always Enabled -->
+            <div class="flex flex-col space-y-2 w-1/4">
+                <!-- Dropdown remains for purchase quantity selection -->
+                <select id="cacheQuantitySelect" class="w-full text-center bg-[#0d1117] text-white p-2 rounded-lg text-sm font-bold credit-display border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <!-- Options are dynamically generated by JavaScript based on the Base Purchase Cost input -->
+                    <option value="1">1 Cache</option>
+                </select>
+                <button id="executeCachePurchaseBtn" class="btn bg-red-800 text-white hover:bg-red-900 shadow-red-900/50 w-full">
+                    Buy Caches (-$)
+                </button>
+            </div>
+        </div>
+        
+        <!-- Temporary Message Box (for confirmation) - DURATION INCREASED TO 7S -->
+        <div id="messageBox" class="p-4 rounded-xl text-white shadow-2xl transition-opacity duration-500 opacity-0 pointer-events-none text-center mb-8 h-12 flex items-center justify-center">
+            <!-- Message content inserted by JavaScript -->
+        </div>
+
+        <!-- Run History Table -->
+        <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-white">Segment History / Event Log</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-[#21262d]">
+                    <tr>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400 rounded-tl-lg">Type</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Segment Time</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Total Time (Timestamp)</th>
+                        <th class="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Credit Change</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTable" class="bg-[#161b22] divide-y divide-gray-700">
+                    <!-- Segment records and transactions will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Constants (Fixed Credit Values) ---
+        const CREDIT_CAP = 10000;
+        const BOSS_CREDITS = 150; // Fixed value
+        const SURVIVAL_CACHE_CREDITS = 170; // Fixed value
+        
+        // --- Button Color Classes ---
+        const START_CLASSES = 'bg-green-600 text-white hover:bg-green-700 shadow-green-900/50';
+        const PAUSE_CLASSES = 'bg-red-600 text-white hover:bg-red-700 shadow-red-900/50'; 
+
+        // --- Timer Variables ---
+        let timerInterval = null;
+        let isRunning = false;
+        let startTime = 0;
+        let totalTime = 0; // Current running time (Pre-Run OR Official Run Time)
+        
+        // --- NEW State Variables for Dual Timer Logic ---
+        let isPreRunPhase = true; // True until the first 'Run' is completed
+        
+        // --- Game State Variables ---
+        let segmentCounter = 0; // Tracks total splits/segments recorded
+        let lastSegmentTime = 0; // Time of the last split (relative to the currently active timer)
+        let totalCredits = 0; // Lifetime/Global Credits Earned
+        let inventoryCredits = 0; // Current Inventory Holding (Capped at CREDIT_CAP)
+        
+        // Array to store raw data for TXT export
+        let historyData = []; 
+
+        // --- DOM Elements ---
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerStatus = document.getElementById('timerStatus');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const exportBtn = document.getElementById('exportBtn'); 
+        const resetBtn = document.getElementById('resetBtn'); 
+        const messageBox = document.getElementById('messageBox');
+        
+        // Stats
+        const creditsTotal = document.getElementById('creditsTotal');
+        const inventoryCreditsDisplay = document.getElementById('inventoryCreditsDisplay');
+        const runCount = document.getElementById('runCount');
+        const historyTable = document.getElementById('historyTable');
+
+        // Editor Inputs
+        const inventoryManualInput = document.getElementById('startingCreditsInput'); 
+        const runCreditsInput = document.getElementById('runCreditsInput');
+        const cachePurchaseCostInput = document.getElementById('cachePurchaseCostInput');
+        // NEW: Survival Cache Count Input
+        const survivalCacheCountInput = document.getElementById('survivalCacheCountInput');
+
+        // Event Buttons (Row 2)
+        const runBtn = document.getElementById('runBtn');
+        const bossKillBtn = document.getElementById('bossKillBtn');
+        
+        // Survival Cache Group
+        // const survivalQuantitySelect = document.getElementById('survivalQuantitySelect'); // REMOVED
+        const executeSurvivalGainBtn = document.getElementById('executeSurvivalGainBtn');
+        
+        // Purchase Elements
+        const cacheQuantitySelect = document.getElementById('cacheQuantitySelect');
+        const executeCachePurchaseBtn = document.getElementById('executeCachePurchaseBtn');
+
+        // --- Utility Functions ---
+
+        /**
+         * Utility function to show a temporary notification banner.
+         * DURATION INCREASED TO 7000ms.
+         */
+        function showTemporaryMessage(message, color = 'bg-blue-600') {
+            messageBox.textContent = message;
+            // Updated class list for the new, in-flow location (no fixed positioning)
+            // Includes h-12 and flex for vertical centering within the bar
+            const baseClasses = 'p-4 rounded-xl text-white shadow-2xl transition-opacity duration-500 opacity-100 pointer-events-none text-center mb-8 h-12 flex items-center justify-center';
+            messageBox.className = `${baseClasses} ${color}`;
+            
+            setTimeout(() => {
+                // Restore the initial state class list (opacity-0, pointer-events-none)
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0');
+            }, 7000); // Increased duration to 7 seconds
+        }
+
+        /**
+         * Updates the status text below the timer based on the current phase.
+         */
+        function updateTimerStatus() {
+            // State 1: Running Official (Green)
+            if (isRunning && !isPreRunPhase) {
+                timerStatus.textContent = 'Official Speed Run Timer is Active';
+                timerStatus.classList.remove('text-yellow-500', 'text-gray-500');
+                timerStatus.classList.add('text-green-500');
+            } 
+            // State 2: Running Pre-Run (Yellow) - This is the desired colored text
+            else if (isRunning && isPreRunPhase) {
+                timerStatus.textContent = 'Pre-Run Timer (First run completion will start official time)';
+                timerStatus.classList.remove('text-green-500', 'text-gray-500');
+                timerStatus.classList.add('text-yellow-500');
+            } 
+            // State 3: Stopped/Paused (Gray) - Default state on reset or pause
+            else { 
+                // When stopped, use the 'Pre-Run' message if it's a fresh run, otherwise indicate resume
+                if (isPreRunPhase) {
+                    timerStatus.textContent = 'Ready: Pre-Run Timer Mode Active';
+                } else {
+                    timerStatus.textContent = 'Timer Stopped / Ready to Resume';
+                }
+                
+                timerStatus.classList.remove('text-yellow-500', 'text-green-500');
+                timerStatus.classList.add('text-gray-500');
+            }
+        }
+
+        /**
+         * Formats milliseconds into HH:MM:SS or HH:MM:SS.ms string.
+         * Used for Total Time display and UI split history.
+         */
+        function formatTime(ms, showMs = false) {
+            if (ms === 0) return showMs ? '00:00:00.000' : '00:00:00';
+            
+            const totalSeconds = Math.floor(ms / 1000); 
+            
+            const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+            let timeString = `${hours}:${minutes}:${seconds}`;
+
+            if (showMs) {
+                const milliseconds = String(Math.floor(ms % 1000)).padStart(3, '0');
+                timeString += `.${milliseconds}`;
+            }
+
+            return timeString;
+        }
+
+        /**
+         * Formats milliseconds into MM:SS string.
+         * Used for segment times in the TXT export as segments are expected to be short.
+         */
+        function formatMinSec(ms) {
+            if (ms === 0) return '00:00';
+            
+            const totalSeconds = Math.floor(ms / 1000); 
+            
+            const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+            return `${minutes}:${seconds}`;
+        }
+        
+        /**
+         * Formats a number using long form.
+         */
+        function formatCredits(num) {
+            return Math.abs(num).toLocaleString();
+        }
+
+        /**
+         * Updates all Credit displays.
+         */
+        function updateCreditDisplays() {
+            creditsTotal.textContent = formatCredits(totalCredits);
+            inventoryCreditsDisplay.textContent = formatCredits(inventoryCredits);
+        }
+        
+        /**
+         * Updates the cache purchase dropdown options dynamically based on cost and cap.
+         */
+        function updateCachePurchaseDropdown() {
+            const baseCost = parseInt(cachePurchaseCostInput.value) || 1500;
+            const select = cacheQuantitySelect;
+            
+            const maxQuantity = Math.floor(CREDIT_CAP / baseCost);
+            
+            const currentValue = select.value;
+            select.innerHTML = ''; 
+            
+            if (maxQuantity < 1) {
+                const option = document.createElement('option');
+                option.value = 1; 
+                option.textContent = `1 Cache (Cost: > Cap)`;
+                select.appendChild(option);
+            } else {
+                for (let i = 1; i <= maxQuantity; i++) {
+                    const totalCost = i * baseCost;
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${i} Cache${i > 1 ? 's' : ''} (${formatCredits(totalCost)})`;
+                    select.appendChild(option);
+                }
+            }
+            
+            const newOptions = Array.from(select.options);
+            const isCurrentValueValid = newOptions.some(opt => opt.value === currentValue);
+            
+            if (isCurrentValueValid) {
+                 select.value = currentValue;
+            } else {
+                select.value = newOptions[newOptions.length - 1]?.value || 1;
+            }
+        }
+
+
+        /**
+         * Updates the timer display every 10 milliseconds.
+         */
+        function updateTimer() {
+            totalTime = performance.now() - startTime;
+            timerDisplay.textContent = formatTime(totalTime, true); 
+        }
+
+        /**
+         * Starts or stops the timer (Pause/Resume Logic).
+         */
+        function handleStartStop() {
+            const staticClasses = ['btn', 'w-1/3', 'sm:w-1/4'];
+            
+            if (isRunning) {
+                // STOP / PAUSE Logic
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isRunning = false;
+                
+                startStopBtn.textContent = 'Start';
+                startStopBtn.className = staticClasses.join(' ') + ' ' + START_CLASSES;
+                
+                // Disable timing-dependent event buttons
+                runBtn.disabled = true;
+                bossKillBtn.disabled = true;
+
+            } else {
+                // START / RESUME Logic
+                // Set the start anchor based on current total time
+                startTime = performance.now() - totalTime; 
+                timerInterval = setInterval(updateTimer, 10); 
+                isRunning = true;
+                
+                startStopBtn.textContent = 'Stop'; 
+                startStopBtn.className = staticClasses.join(' ') + ' ' + PAUSE_CLASSES;
+                
+                // Enable timing-dependent event buttons
+                runBtn.disabled = false;
+                
+                // Boss Kill is ONLY enabled if the official run has started (isPreRunPhase == false)
+                bossKillBtn.disabled = isPreRunPhase;
+
+            }
+            // Always update status after state change
+            updateTimerStatus(); 
+        }
+        
+        /**
+         * Handles manual input change for current inventory credits (when timer is stopped).
+         */
+        function handleManualInventoryUpdate() {
+            if (isRunning) {
+                showTemporaryMessage("Stop the timer to manually adjust current inventory.", 'bg-red-700');
+                inventoryManualInput.value = inventoryCredits;
+                return;
+            }
+            
+            let newValue = parseInt(inventoryManualInput.value) || 0;
+            
+            // Apply cap and min
+            if (newValue > CREDIT_CAP) {
+                newValue = CREDIT_CAP;
+                showTemporaryMessage(`Inventory credits manually capped at ${CREDIT_CAP.toLocaleString()}.`, 'bg-red-700');
+            } else if (newValue < 0) {
+                newValue = 0;
+            }
+
+            inventoryManualInput.value = newValue; 
+            inventoryCredits = newValue;
+            updateCreditDisplays();
+        }
+
+        /**
+         * Records a segment completion (Run or Boss Kill) and adds credits.
+         * @param {string} type - 'Run' or 'Boss Kill'.
+         */
+        function handleCreditGainSegment(type) {
+            if (!isRunning) return;
+
+            // --- 1. HANDLE PRE-RUN PHASE (Only for the first 'Run' click) ---
+            if (type === 'Run' && isPreRunPhase) {
+                
+                const preRunDuration = totalTime; // Time from START to first RUN click
+                
+                // 1a. Transition to Official Timer
+                totalTime = 0;          // Official Timer starts at 0
+                lastSegmentTime = 0;    // Last segment time (for splits) is 0
+                startTime = performance.now(); // Reset the anchor point to now
+                isPreRunPhase = false;  // Official run has begun
+
+                // 1b. Log the special initial segment (segment #1)
+                const runCredits = parseInt(runCreditsInput.value) || 0;
+                const spaceAvailable = CREDIT_CAP - inventoryCredits;
+                const actualGain = Math.min(runCredits, Math.max(0, spaceAvailable));
+
+                inventoryCredits += actualGain;
+                totalCredits += actualGain;
+                segmentCounter++;
+
+                historyData.unshift({ 
+                    type: "Initial Run", // <-- Cleaned up log text
+                    segmentTimeMs: preRunDuration, 
+                    totalTimeMs: 0, // Total official time is 0 at this point
+                    credits: actualGain 
+                });
+                
+                runCount.textContent = segmentCounter; 
+                updateCreditDisplays();
+                updateTimerStatus(); // Update status text
+
+                // Also enable Boss Kill button now
+                bossKillBtn.disabled = false;
+
+
+                let message = '';
+                if (actualGain < runCredits) {
+                    const excessLost = runCredits - actualGain;
+                    message = `Official Run Started! Initial segment: ${formatTime(preRunDuration, false)}. Inventory capped, ${formatCredits(excessLost)} credits lost.`;
+                    showTemporaryMessage(message, 'bg-red-700');
+                } else {
+                    message = `Official Run Started! Initial segment: ${formatTime(preRunDuration, false)}. Gained ${formatCredits(actualGain)} credits.`;
+                    showTemporaryMessage(message, 'bg-green-600');
+                }
+
+            } 
+            
+            // --- 2. HANDLE OFFICIAL SPLITS (Run 2+ and Boss Kill) ---
+            else {
+                // If it's Boss Kill AND we are still in Pre-Run Phase, block it.
+                if (type !== 'Run' && isPreRunPhase) {
+                    showTemporaryMessage(`Cannot log a ${type} event until the first "Run" is completed to start the official timer.`, 'bg-red-700');
+                    return;
+                }
+
+                // Normal Split Logic
+                const currentTotalTime = totalTime;
+                const currentSegmentTime = currentTotalTime - lastSegmentTime;
+                
+                let creditsGained = 0;
+                
+                if (type === 'Run') {
+                    creditsGained = parseInt(runCreditsInput.value) || 0;
+                } else if (type === 'Boss Kill') {
+                    creditsGained = BOSS_CREDITS;
+                }
+                
+                creditsGained = Math.max(0, creditsGained);
+
+                // Cap Logic
+                const spaceAvailable = CREDIT_CAP - inventoryCredits;
+                const actualGain = Math.min(creditsGained, Math.max(0, spaceAvailable));
+
+                inventoryCredits += actualGain;
+                totalCredits += actualGain; 
+                
+                let message = '';
+                if (actualGain < creditsGained) {
+                    const excessLost = creditsGained - actualGain;
+                    message = `Inventory capped at ${CREDIT_CAP.toLocaleString()}. ${formatCredits(excessLost)} credits were lost.`;
+                    showTemporaryMessage(message, 'bg-red-700');
+                } else {
+                    message = `${type} Recorded! Gained ${formatCredits(actualGain)} credits.`;
+                    showTemporaryMessage(message, type === 'Run' ? 'bg-cyan-600' : 'bg-indigo-600');
+                }
+
+                // Update Segment State
+                segmentCounter++;
+                lastSegmentTime = currentTotalTime; 
+
+                // Store Data - Log the ACTUAL credit event value that entered the total
+                historyData.unshift({ 
+                    type: type,
+                    segmentTimeMs: currentSegmentTime, 
+                    totalTimeMs: currentTotalTime, 
+                    credits: actualGain 
+                });
+
+                // Update UI Stats
+                runCount.textContent = segmentCounter; 
+                updateCreditDisplays();
+            }
+
+            // --- 3. COMMON HISTORY TABLE UPDATE ---
+            const latestSegment = historyData[0];
+            const newRow = historyTable.insertRow(0);
+            
+            newRow.classList.add('hover:bg-[#21262d]');
+            
+            let cell1 = newRow.insertCell(0);
+            cell1.textContent = latestSegment.type;
+            cell1.classList.add('px-3', 'py-2', 'text-gray-300', 'font-medium');
+            
+            let cell2 = newRow.insertCell(1);
+            cell2.textContent = formatTime(latestSegment.segmentTimeMs, false); // UI: HH:MM:SS
+            const color = latestSegment.type.includes('Initial') ? 'text-yellow-400' : (latestSegment.type === 'Run' ? 'text-cyan-400' : 'text-indigo-400');
+            cell2.classList.add('px-3', 'py-2', color, 'credit-display');
+            
+            let cell3 = newRow.insertCell(2);
+            cell3.textContent = latestSegment.totalTimeMs > 0 ? formatTime(latestSegment.totalTimeMs, false) : '---';
+            cell3.classList.add('px-3', 'py-2', 'text-blue-400', 'credit-display');
+            
+            let cell4 = newRow.insertCell(3);
+            cell4.textContent = `+${formatCredits(latestSegment.credits)}`; 
+            cell4.classList.add('px-3', 'py-2', 'text-green-400', 'font-bold');
+
+            // Visual feedback on timer (only if official run has started)
+            if (!isPreRunPhase) {
+                timerDisplay.classList.add('text-green-500');
+                setTimeout(() => {
+                    timerDisplay.classList.remove('text-green-500');
+                    timerDisplay.style.color = '#58a6ff'; 
+                }, 300);
+            }
+        }
+        
+        /**
+         * Handles Survival Cache (Gain) transaction. INCLUDES SPLIT LOGIC IF RUNNING, otherwise logs transaction only.
+         * Now reads the quantity from the new survivalCacheCountInput and resets it to 0.
+         */
+        function handleSurvivalCacheGain() {
+            
+            // Read quantity from the new input field
+            let quantity = parseInt(survivalCacheCountInput.value) || 0;
+            if (quantity <= 0) {
+                showTemporaryMessage("Number of Survival Caches must be greater than 0 to process.", 'bg-red-700');
+                return;
+            }
+            
+            if (isPreRunPhase && isRunning) {
+                 showTemporaryMessage(`Cannot log a Cache gain event as a split until the first "Run" is completed to start the official timer. Transaction will be logged without split time.`, 'bg-orange-700');
+            }
+
+            // --- Calculate Total Gain ---
+            const amount = SURVIVAL_CACHE_CREDITS * quantity; // Total credits gained
+
+            // --- Determine Timestamp and Segment Time ---
+            let segmentTime = 0;
+            // Total time reference depends on whether the official timer is running
+            let currentTotalTime = isRunning ? totalTime : (historyData[0]?.totalTimeMs || 0);
+
+            if (isRunning && !isPreRunPhase) { 
+                // Log split only if official run is active
+                segmentTime = totalTime - lastSegmentTime;
+
+                // Update Segment State
+                segmentCounter++;
+                lastSegmentTime = currentTotalTime; 
+                runCount.textContent = segmentCounter;
+            } 
+            
+            // --- Credit Gain Logic ---
+            const potentialGain = Math.max(0, amount);
+            const spaceAvailable = CREDIT_CAP - inventoryCredits;
+            const actualGain = Math.min(potentialGain, Math.max(0, spaceAvailable)); 
+            
+            inventoryCredits += actualGain; 
+            totalCredits += actualGain; 
+
+            // --- Reset Input Field ---
+            survivalCacheCountInput.value = 0;
+
+            let creditChange = actualGain; // Actual gain (0 if inventory full)
+            let message = '';
+
+            if (actualGain < potentialGain) {
+                const excessLost = potentialGain - actualGain;
+                message = `Found ${quantity} Survival Cache(s). Inventory capped at ${CREDIT_CAP.toLocaleString()}. ${formatCredits(excessLost)} credits lost.`;
+                showTemporaryMessage(message, 'bg-red-700');
+            } else {
+                // Message adjusted based on whether a split was recorded
+                if (isRunning && !isPreRunPhase) {
+                     message = `Found ${quantity} Survival Cache(s)! Gained ${formatCredits(actualGain)} credits and recorded a split.`;
+                } else {
+                     message = `Found ${quantity} Survival Cache(s)! Gained ${formatCredits(actualGain)} credits.`;
+                }
+                showTemporaryMessage(message, 'bg-purple-800');
+            }
+            
+            // --- Store Data (New Log Entry) ---
+            historyData.unshift({ 
+                type: `Survival Cache (${quantity}x)`, 
+                segmentTimeMs: segmentTime, 
+                totalTimeMs: currentTotalTime, 
+                credits: creditChange, // Actual gain
+            });
+            
+            // --- Update UI Stats ---
+            updateCreditDisplays();
+
+            // --- Add to History Table (Segment/Log style) ---
+            const latestLog = historyData[0];
+            const newRow = historyTable.insertRow(0);
+            
+            newRow.classList.add('hover:bg-[#21262d]');
+            
+            let cell1 = newRow.insertCell(0);
+            cell1.textContent = latestLog.type;
+            cell1.classList.add('px-3', 'py-2', 'text-gray-300', 'font-medium');
+            
+            let cell2 = newRow.insertCell(1);
+            cell2.textContent = latestLog.segmentTimeMs > 0 ? formatTime(latestLog.segmentTimeMs, false) : '---'; // UI: HH:MM:SS
+            cell2.classList.add('px-3', 'py-2', latestLog.segmentTimeMs > 0 ? 'text-purple-400' : 'text-gray-500', 'credit-display'); 
+            
+            let cell3 = newRow.insertCell(2);
+            // Show timestamp only if official timer has started OR if timer is stopped
+            const timestampText = latestLog.totalTimeMs > 0 ? formatTime(latestLog.totalTimeMs, false) : (isRunning && isPreRunPhase ? formatTime(totalTime, false) : '---');
+            cell3.textContent = timestampText; 
+            cell3.classList.add('px-3', 'py-2', 'text-yellow-400', 'credit-display'); 
+            
+            let cell4 = newRow.insertCell(3);
+            cell4.textContent = `+${formatCredits(latestLog.credits)}`; 
+            cell4.classList.add('px-3', 'py-2', 'text-green-400', 'font-bold');
+            
+             // Visual feedback on timer only if running and official phase
+            if (isRunning && !isPreRunPhase) {
+                timerDisplay.classList.add('text-green-500');
+                setTimeout(() => {
+                    timerDisplay.classList.remove('text-green-500');
+                    timerDisplay.style.color = '#58a6ff'; 
+                }, 300);
+            }
+        }
+        
+        /**
+         * Handles the multi-quantity Cache Purchase transaction (Loss). INCLUDES SPLIT LOGIC IF RUNNING, otherwise logs transaction only.
+         */
+        function handleCachePurchase() {
+            
+            if (isPreRunPhase && isRunning) {
+                 showTemporaryMessage(`Cannot log a Cache purchase event as a split until the first "Run" is completed to start the official timer. Transaction will be logged without split time.`, 'bg-orange-700');
+            }
+            
+            const quantity = parseInt(cacheQuantitySelect.value) || 1;
+            const baseCost = parseInt(cachePurchaseCostInput.value) || 1500;
+            const totalCost = quantity * baseCost;
+            
+            if (inventoryCredits < totalCost) {
+                showTemporaryMessage(`Insufficient Inventory Credits to purchase ${quantity} cache(s) (${formatCredits(totalCost)} needed).`, 'bg-red-700');
+                return;
+            }
+
+            // --- Execute Purchase (Loss) ---
+            inventoryCredits -= totalCost; 
+            const creditChange = -totalCost;
+
+            // --- Determine Timestamp and Segment Time ---
+            let segmentTime = 0;
+            let currentTotalTime = isRunning ? totalTime : (historyData[0]?.totalTimeMs || 0);
+
+            if (isRunning && !isPreRunPhase) {
+                // Segment Split Logic for Purchase (only if official run is active)
+                segmentTime = totalTime - lastSegmentTime;
+                
+                segmentCounter++;
+                lastSegmentTime = currentTotalTime;
+                runCount.textContent = segmentCounter; 
+                
+                showTemporaryMessage(`Cache Purchase Made. Deducted ${formatCredits(totalCost)} credits and recorded a split!`, 'bg-red-800');
+                
+            } else {
+                // Timer stopped or in pre-run phase - no split time recorded, only transaction log timestamp
+                showTemporaryMessage(`Cache Purchase Made. Deducted ${formatCredits(totalCost)} credits.`, 'bg-red-800');
+            }
+
+
+            // --- Store Data (New Log Entry) ---
+            historyData.unshift({ 
+                type: `Cache Purchase (${quantity}x)`,
+                segmentTimeMs: segmentTime,
+                totalTimeMs: currentTotalTime, 
+                credits: creditChange, 
+            });
+            
+            // --- Update UI Stats ---
+            updateCreditDisplays();
+
+            // --- Add to History Table (Log style) ---
+            const latestLog = historyData[0];
+            const newRow = historyTable.insertRow(0);
+            
+            newRow.classList.add('hover:bg-[#21262d]');
+            
+            let cell1 = newRow.insertCell(0);
+            cell1.textContent = latestLog.type;
+            cell1.classList.add('px-3', 'py-2', 'text-gray-300', 'font-medium');
+            
+            // Cell 2: Segment Time
+            let cell2 = newRow.insertCell(1);
+            cell2.textContent = latestLog.segmentTimeMs > 0 ? formatTime(latestLog.segmentTimeMs, false) : '---'; // UI: HH:MM:SS
+            cell2.classList.add('px-3', 'py-2', latestLog.segmentTimeMs > 0 ? 'text-red-400' : 'text-gray-500', 'credit-display'); // Red for Purchase Splits
+            
+            // Cell 3: Total Time (Timestamp)
+            let cell3 = newRow.insertCell(2);
+            // Show timestamp only if official timer has started OR if timer is stopped
+            const timestampText = latestLog.totalTimeMs > 0 ? formatTime(latestLog.totalTimeMs, false) : (isRunning && isPreRunPhase ? formatTime(totalTime, false) : '---');
+            cell3.textContent = timestampText; 
+            cell3.classList.add('px-3', 'py-2', 'text-yellow-400', 'credit-display'); 
+            
+            // Cell 4: Credits Lost 
+            let cell4 = newRow.insertCell(3);
+            cell4.textContent = `-${formatCredits(Math.abs(latestLog.credits))}`; 
+            cell4.classList.add('px-3', 'py-2', 'text-red-400', 'font-bold');
+            
+             // Visual feedback on timer (only if running and official phase)
+            if (isRunning && !isPreRunPhase) {
+                timerDisplay.classList.add('text-red-500');
+                setTimeout(() => {
+                    timerDisplay.classList.remove('text-red-500');
+                    timerDisplay.style.color = '#58a6ff'; 
+                }, 300);
+            }
+        }
+
+
+        /**
+         * Generates and downloads a TXT file containing summary and history.
+         */
+        function handleExport() {
+            if (historyData.length === 0) {
+                showTemporaryMessage("No run data to export yet!", 'bg-red-600');
+                return;
+            }
+
+            // If the official timer is still at 0, use the pre-run time duration for summary.
+            const runDurationForSummary = isPreRunPhase ? totalTime : totalTime;
+            const dateStamp = new Date().toISOString().slice(0, 19).replace('T', ' ').replaceAll('-', '/');
+            const formattedTotalTime = formatTime(runDurationForSummary, true); 
+            
+            let txtContent = "";
+            
+            // --- Analysis Filtering ---
+            // Count all run types, including the initial one
+            const totalRunsCount = historyData.filter(item => 
+                item.type === 'Run' || item.type === 'Initial Run' 
+            ).length;
+
+            // Filter for timing analysis (all segments where segment time > 0)
+            const allTimedSegments = historyData
+                .filter(item => item.segmentTimeMs > 0 && (item.type === 'Run' || item.type === 'Initial Run')) 
+                .map(item => item.segmentTimeMs);
+
+            let fastestRunTime = null;
+            let slowestRunTime = null;
+
+            if (allTimedSegments.length > 0) {
+                fastestRunTime = Math.min(...allTimedSegments);
+                slowestRunTime = Math.max(...allTimedSegments);
+            }
+
+            // --- 1. Summary Section ---
+            txtContent += "--- Div1 Speed Run Timer Data ---\n";
+            txtContent += `Date Exported: ${dateStamp}\n\n`;
+            
+            txtContent += "--- RUN SUMMARY ---\n";
+            txtContent += `Total Splits Recorded: ............... ${segmentCounter}\n`;
+            txtContent += `Total Official Run Time: ............. ${formattedTotalTime}\n`; 
+            txtContent += `Total Credits Earned: ................ ${formatCredits(totalCredits)}\n`; 
+            txtContent += `Current Inventory Credits: ........... ${formatCredits(inventoryCredits)}\n`; 
+            
+            // --- 2. RUN ANALYSIS Section ---
+            txtContent += "\n--- RUN ANALYSIS ---\n"; 
+            // Corrected line for analysis count
+            txtContent += `Total Runs Counted: ................. ${totalRunsCount}\n`; 
+            
+            // Export segment times in MM:SS format
+            txtContent += `Fastest Segment Time: ................ ${fastestRunTime !== null ? formatMinSec(fastestRunTime) : 'N/A'}\n`;
+            txtContent += `Slowest Segment Time: ................ ${slowestRunTime !== null ? formatMinSec(slowestRunTime) : 'N/A'}\n\n`;
+            
+            
+            // --- 3. History Section ---
+            // MODIFICATION: Removed "(Ordered Newest to Oldest)" text
+            txtContent += "--- EVENT LOG ---\n"; 
+            
+            // Header updated to reflect the fixed-width columns
+            const header = "TYPE                   | SEGMENT TIME   | TOTAL TIME     | CREDIT CHANGE";
+            txtContent += header + "\n";
+            // 23 dashes for Type column padding
+            txtContent += "-----------------------+----------------+----------------+----------------\n"; 
+            
+            // Iterate from start to end (newest to oldest)
+            for (let i = 0; i < historyData.length; i++) {
+                const item = historyData[i];
+                
+                const creditText = (item.credits >= 0 ? '+' : '') + formatCredits(item.credits);
+
+                // Use '---' if segment time is 0 
+                const segmentTimeFormatted = item.segmentTimeMs > 0 ? formatMinSec(item.segmentTimeMs) : '---'; 
+                
+                // Only show total time if it's an official time log
+                const totalTimeFormatted = item.totalTimeMs > 0 ? formatTime(item.totalTimeMs, false) : '---'; 
+
+                // Fixed-width columns for readability in notepad.
+                const row = 
+                    `${item.type.padEnd(22)} | ` + 
+                    `${segmentTimeFormatted.padEnd(14)} | ` + 
+                    `${totalTimeFormatted.padEnd(14)} | ` + 
+                    `${creditText.padEnd(14)}\n`;
+                    
+                txtContent += row;
+            }
+
+
+            // Trigger download
+            const encodedUri = encodeURI("data:text/plain;charset=utf-8," + txtContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            
+            const fileDateStamp = new Date().toISOString().slice(0, 19).replace('T', '_').replaceAll(':', '-');
+            link.setAttribute("download", `Div1_Speedrun_Data_${fileDateStamp}.txt`);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showTemporaryMessage("Exported summary and history data to TXT file!", 'bg-yellow-600');
+        }
+
+        /**
+         * Resets all state, history, and currency completely.
+         */
+        function handleReset() {
+            // Stop the timer if running
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            let startValue = Math.max(0, parseInt(inventoryManualInput.value) || 0);
+            startValue = Math.min(CREDIT_CAP, startValue);
+
+            // Reset all state variables
+            isRunning = false;
+            startTime = 0;
+            totalTime = 0; 
+            segmentCounter = 0; 
+            lastSegmentTime = 0; 
+            totalCredits = 0; 
+            inventoryCredits = startValue; 
+            historyData = []; 
+            isPreRunPhase = true; // IMPORTANT: Reset to pre-run phase
+            
+            // Reset UI elements
+            timerDisplay.textContent = formatTime(0, true); 
+            runCount.textContent = '0';
+            historyTable.innerHTML = ''; 
+            inventoryManualInput.value = startValue; 
+            updateCreditDisplays(); 
+            updateTimerStatus(); // Update status text
+
+            // Reset Editor inputs that store temporary values
+            survivalCacheCountInput.value = 0;
+
+            // Update cache purchase dropdown (depends on cachePurchaseCostInput)
+            updateCachePurchaseDropdown();
+
+            // Reset Start/Stop button appearance
+            startStopBtn.textContent = 'Start';
+            startStopBtn.className = `btn ${START_CLASSES} w-1/3 sm:w-1/4`;
+            
+            // Disable timing-dependent buttons/groups (Run and Boss Kill)
+            runBtn.disabled = true;
+            bossKillBtn.disabled = true;
+            
+            showTemporaryMessage(`Timer, History, and Credits have been fully reset. Inventory started at ${formatCredits(startValue)}.`, 'bg-orange-600');
+        }
+
+        // --- Event Listeners ---
+        startStopBtn.addEventListener('click', handleStartStop);
+        resetBtn.addEventListener('click', handleReset); 
+        exportBtn.addEventListener('click', handleExport); 
+        
+        // Manual Inventory Update Listener
+        inventoryManualInput.addEventListener('change', handleManualInventoryUpdate);
+        
+        // Listener for the Cache Base Cost input (to update dropdown text dynamically)
+        cachePurchaseCostInput.addEventListener('input', updateCachePurchaseDropdown);
+        cachePurchaseCostInput.addEventListener('change', updateCachePurchaseDropdown);
+
+        // Credit Segment Listeners (Timing dependent - Run and Boss Kill)
+        runBtn.addEventListener('click', () => handleCreditGainSegment('Run'));
+        bossKillBtn.addEventListener('click', () => handleCreditGainSegment('Boss Kill'));
+        
+        // Survival Cache Group Listener (Always enabled)
+        executeSurvivalGainBtn.addEventListener('click', handleSurvivalCacheGain);
+        
+        // Cache Purchase Listener (Always enabled)
+        executeCachePurchaseBtn.addEventListener('click', handleCachePurchase);
+
+
+        // Initial setup
+        updateCreditDisplays();
+        handleReset(); // Initializes state and dropdowns/inputs
+    </script>
+</body>
+</html>
